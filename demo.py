@@ -5,6 +5,7 @@ import multiprocessing as mp
 import os
 import time
 import cv2
+import numpy as np
 import tqdm
 
 from detectron2.config import get_cfg
@@ -14,7 +15,7 @@ from detectron2.utils.logger import setup_logger
 from predictor import VisualizationDemo
 
 # constants
-WINDOW_NAME = "COCO detections"
+WINDOW_NAME = "Golf Swing Analysis"
 
 
 def setup_cfg(args):
@@ -31,15 +32,15 @@ def setup_cfg(args):
 
 
 def get_parser():
-    parser = argparse.ArgumentParser(description="Detectron2 demo for builtin models")
+    parser = argparse.ArgumentParser(description="Golf Swing Analysis Using Pose Estimation")
     parser.add_argument(
         "--config-file",
         default="configs/quick_schedules/mask_rcnn_R_50_FPN_inference_acc_test.yaml",
         metavar="FILE",
         help="path to config file",
     )
-    parser.add_argument("--webcam", action="store_true", help="Take inputs from webcam.")
-    parser.add_argument("--video-input", help="Path to video file.")
+    parser.add_argument("--ref-video", help="Path the swing reference video")
+    parser.add_argument("--analysis-video", help="Path to swing to analyse")
     parser.add_argument(
         "--input",
         nargs="+",
@@ -110,24 +111,13 @@ if __name__ == "__main__":
                 cv2.imshow(WINDOW_NAME, visualized_output.get_image()[:, :, ::-1])
                 if cv2.waitKey(0) == 27:
                     break  # esc to quit
-    elif args.webcam:
-        assert args.input is None, "Cannot have both --input and --webcam!"
-        assert args.output is None, "output not yet supported with --webcam!"
-        cam = cv2.VideoCapture(0)
-        for vis in tqdm.tqdm(demo.run_on_video(cam)):
-            cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
-            cv2.imshow(WINDOW_NAME, vis)
-            if cv2.waitKey(1) == 27:
-                break  # esc to quit
-        cam.release()
-        cv2.destroyAllWindows()
-    elif args.video_input:
-        video = cv2.VideoCapture(args.video_input)
+    elif args.ref_video and args.analysis_video:
+        video = cv2.VideoCapture(args.ref_video)
         width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
         frames_per_second = video.get(cv2.CAP_PROP_FPS)
         num_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
-        basename = os.path.basename(args.video_input)
+        basename = os.path.basename(args.ref_video)
 
         if args.output:
             if os.path.isdir(args.output):
@@ -145,13 +135,14 @@ if __name__ == "__main__":
                 frameSize=(width, height),
                 isColor=True,
             )
-        assert os.path.isfile(args.video_input)
+        assert os.path.isfile(args.ref_video)
         for vis_frame in tqdm.tqdm(demo.run_on_video(video), total=num_frames):
+            numpy_horizontal = np.hstack((vis_frame, vis_frame))
             if args.output:
-                output_file.write(vis_frame)
+                output_file.write(numpy_horizontal)
             else:
                 cv2.namedWindow(basename, cv2.WINDOW_NORMAL)
-                cv2.imshow(basename, vis_frame)
+                cv2.imshow(basename, numpy_horizontal)
                 if cv2.waitKey(1) == 27:
                     break  # esc to quit
         video.release()
