@@ -14,12 +14,15 @@ then
     git clone https://github.com/facebookresearch/detectron2.git
     cd detectron2 && git checkout f3ada7de1fa30f03c330bb701c5100d88f43b429
     # Copy over the juggling example, and modified predictor.py script.
-    cp ../* ./demo/
-    cd demo
+
 else
-    cd detectron2/demo
+    cd detectron2
 fi
 
+yes | cp -rf ../*.py ./demo/
+yes | cp -rf ../*.mp4 ./demo/
+cd demo
+
 # Run the model on the webcam.
-python3 demo.py --video-input --confidence-threshold 0.99 --config-file ../configs/COCO-Keypoints/keypoint_rcnn_R_50_FPN_3x.yaml --opts MODEL.WEIGHTS detectron2://COCO-Keypoints/keypoint_rcnn_R_50_FPN_3x/137849621/model_final_a6e10b.pkl
+python3 demo.py --ref-video test_file.mp4 --analysis-video test --confidence-threshold 0.99 --config-file ../configs/COCO-Keypoints/keypoint_rcnn_R_50_FPN_3x.yaml --opts MODEL.WEIGHTS detectron2://COCO-Keypoints/keypoint_rcnn_R_50_FPN_3x/137849621/model_final_a6e10b.pkl
 
