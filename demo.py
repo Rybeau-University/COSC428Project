@@ -112,11 +112,12 @@ if __name__ == "__main__":
                 if cv2.waitKey(0) == 27:
                     break  # esc to quit
     elif args.ref_video and args.analysis_video:
-        video = cv2.VideoCapture(args.ref_video)
-        width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        frames_per_second = video.get(cv2.CAP_PROP_FPS)
-        num_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
+        analysis_video = cv2.VideoCapture(args.analysis_video)
+        ref_video = cv2.VideoCapture(args.ref_video)
+        width = int(ref_video.get(cv2.CAP_PROP_FRAME_WIDTH) + analysis_video.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(max(ref_video.get(cv2.CAP_PROP_FRAME_HEIGHT), analysis_video.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+        frames_per_second = ref_video.get(cv2.CAP_PROP_FPS)
+        num_frames = int(ref_video.get(cv2.CAP_PROP_FRAME_COUNT))
         basename = os.path.basename(args.ref_video)
 
         if args.output:
@@ -136,16 +137,16 @@ if __name__ == "__main__":
                 isColor=True,
             )
         assert os.path.isfile(args.ref_video)
-        for vis_frame in tqdm.tqdm(demo.run_on_video(video), total=num_frames):
-            numpy_horizontal = np.hstack((vis_frame, vis_frame))
+        assert os.path.isfile(args.analysis_video)
+        for vis_frame in tqdm.tqdm(demo.run_on_video(ref_video, analysis_video), total=num_frames):
             if args.output:
-                output_file.write(numpy_horizontal)
+                output_file.write(vis_frame)
             else:
                 cv2.namedWindow(basename, cv2.WINDOW_NORMAL)
-                cv2.imshow(basename, numpy_horizontal)
+                cv2.imshow(basename, vis_frame)
                 if cv2.waitKey(1) == 27:
                     break  # esc to quit
-        video.release()
+        ref_video.release()
         if args.output:
             output_file.release()
         else:
