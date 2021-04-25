@@ -136,7 +136,7 @@ class VisualizationDemo(object):
 
         return frame
 
-    def run_on_video(self, video):
+    def run_on_video(self, ref_video, analysis_video):
         """
         Visualizes predictions on frames of the input video.
 
@@ -170,7 +170,7 @@ class VisualizationDemo(object):
 
             return vis_frame
 
-        frame_gen = self._frame_from_video(video)
+        frame_gen = self._frame_from_video(ref_video)
         if self.parallel:
             buffer_size = self.predictor.default_buffer_size
 
