@@ -4,6 +4,7 @@ import bisect
 import multiprocessing as mp
 from collections import deque
 import cv2
+import numpy as np
 import torch
 
 from detectron2.data import MetadataCatalog
@@ -157,7 +158,7 @@ class VisualizationDemo(object):
 
                 # Perform the checks for the juggling algorithm, and draw
                 # the associated overlays.
-                vis_frame = self.juggling_check(predictions, frame)
+                vis_frame = frame
 
                 # Draw the neural network overlay (object bounding box, and body
                 # keypoints).
@@ -170,13 +171,17 @@ class VisualizationDemo(object):
 
             return vis_frame
 
-        frame_gen = self._frame_from_video(ref_video)
+        def match_frame_height(frame_1, frame_2):
+            pass
+
+        frame_gen_ref = self._frame_from_video(ref_video)
+        frame_gen_analysis = self._frame_from_video(analysis_video)
         if self.parallel:
             buffer_size = self.predictor.default_buffer_size
 
             frame_data = deque()
 
-            for cnt, frame in enumerate(frame_gen):
+            for cnt, frame in enumerate(frame_gen_ref):
                 frame_data.append(frame)
                 self.predictor.put(frame)
 
@@ -190,8 +195,9 @@ class VisualizationDemo(object):
                 predictions = self.predictor.get()
                 yield process_predictions(frame, predictions)
         else:
-            for frame in frame_gen:
-                yield process_predictions(frame, self.predictor(frame))
+            for ref_frame, analysis_frame in zip(frame_gen_ref, frame_gen_analysis):
+                yield np.hstack((process_predictions(ref_frame, self.predictor(ref_frame)),
+                                process_predictions(analysis_frame, self.predictor(analysis_frame))))
 
 
 class AsyncPredictor:
