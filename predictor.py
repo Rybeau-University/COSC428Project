@@ -188,28 +188,10 @@ class VisualizationDemo(object):
 
         frame_gen_ref = self._frame_from_video(ref_video)
         frame_gen_analysis = self._frame_from_video(analysis_video)
-        if self.parallel:
-            buffer_size = self.predictor.default_buffer_size
 
-            frame_data = deque()
-
-            for cnt, frame in enumerate(frame_gen_ref):
-                frame_data.append(frame)
-                self.predictor.put(frame)
-
-                if cnt >= buffer_size:
-                    frame = frame_data.popleft()
-                    predictions = self.predictor.get()
-                    yield process_predictions(frame, predictions)
-
-            while len(frame_data):
-                frame = frame_data.popleft()
-                predictions = self.predictor.get()
-                yield process_predictions(frame, predictions)
-        else:
-            for ref_frame, analysis_frame in zip(frame_gen_ref, frame_gen_analysis):
-                yield match_frame_height(process_predictions(ref_frame, self.predictor(ref_frame)),
-                                         process_predictions(analysis_frame, self.predictor(analysis_frame)))
+        for ref_frame, analysis_frame in zip(frame_gen_ref, frame_gen_analysis):
+            yield match_frame_height(process_predictions(ref_frame, self.predictor(ref_frame)),
+                                     process_predictions(analysis_frame, self.predictor(analysis_frame)))
 
 
 class AsyncPredictor:
