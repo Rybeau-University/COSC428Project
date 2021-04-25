@@ -26,4 +26,5 @@ cd demo
 # Run the model on the webcam.
 python3 demo.py --ref-video ref_vid.mp4 --analysis-video ref_vid.mp4 --confidence-threshold 0.99 --config-file ../configs/COCO-Keypoints/keypoint_rcnn_R_50_FPN_3x.yaml --opts MODEL.WEIGHTS detectron2://COCO-Keypoints/keypoint_rcnn_R_50_FPN_3x/137849621/model_final_a6e10b.pkl
 
-git reset HEAD
+rm *.*
+git reset --hard HEAD
