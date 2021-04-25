@@ -118,7 +118,7 @@ if __name__ == "__main__":
         height = int(max(ref_video.get(cv2.CAP_PROP_FRAME_HEIGHT), analysis_video.get(cv2.CAP_PROP_FRAME_HEIGHT)))
         frames_per_second = ref_video.get(cv2.CAP_PROP_FPS)
         num_frames = int(ref_video.get(cv2.CAP_PROP_FRAME_COUNT))
-        basename = os.path.basename(args.ref_video)
+        basename = WINDOW_NAME
 
         if args.output:
             if os.path.isdir(args.output):
@@ -143,10 +143,12 @@ if __name__ == "__main__":
                 output_file.write(vis_frame)
             else:
                 cv2.namedWindow(basename, cv2.WINDOW_NORMAL)
+                cv2.resizeWindow(basename, 600, 600)
                 cv2.imshow(basename, vis_frame)
                 if cv2.waitKey(1) == 27:
                     break  # esc to quit
         ref_video.release()
+        analysis_video.release()
         if args.output:
             output_file.release()
         else:
