@@ -14,6 +14,7 @@ from detectron2.utils.visualizer import ColorMode, Visualizer
 
 from track_balls import get_ball_coordinates, test_ball_dropped
 
+
 class VisualizationDemo(object):
     def __init__(self, cfg, instance_mode=ColorMode.IMAGE, parallel=False):
         """
@@ -93,9 +94,9 @@ class VisualizationDemo(object):
             # In the interest of reducing the scope of modifications, this has been
             # implemented here. This is not really a good approach, however.
             # You're much better off initialising these variables in the __init__ method.
-            self.ball_dropped = [False, False, False] # Keeping track of whether the balls have been dropped (red, green, orange).
-            self.DROPPED_BALL_THRESHOLD = 400 # Number of pixels below the nearest wrist to be considered "dropped".
-
+            self.ball_dropped = [False, False,
+                                 False]  # Keeping track of whether the balls have been dropped (red, green, orange).
+            self.DROPPED_BALL_THRESHOLD = 400  # Number of pixels below the nearest wrist to be considered "dropped".
 
         if len(predictions) > 0:
             keypoint_names = self.metadata.get("keypoint_names")
@@ -107,7 +108,8 @@ class VisualizationDemo(object):
 
             # Find the locations of the three balls using colour segmentation in the HSV colour space.
             hsv_img = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-            red_center,red_radius,green_center,green_radius,orange_center,orange_radius = get_ball_coordinates(hsv_img)
+            red_center, red_radius, green_center, green_radius, orange_center, orange_radius = get_ball_coordinates(
+                hsv_img)
 
             # Sometimes the balls are obscured by the juggler's hands. If that's the case, skip the test.
             # Otherwise, check whether the balls have been dropped or not.
@@ -116,21 +118,21 @@ class VisualizationDemo(object):
             if red_radius is not None:
                 if test_ball_dropped(red_center, left_wrist, right_wrist, self.DROPPED_BALL_THRESHOLD):
                     self.ball_dropped[0] = True
-                    cv2.circle(frame, red_center, red_radius, (0,0,255), cv2.FILLED)
+                    cv2.circle(frame, red_center, red_radius, (0, 0, 255), cv2.FILLED)
                 else:
-                    cv2.circle(frame, red_center, red_radius, (0,0,255), 2)
+                    cv2.circle(frame, red_center, red_radius, (0, 0, 255), 2)
             if green_radius is not None:
                 if test_ball_dropped(green_center, left_wrist, right_wrist, self.DROPPED_BALL_THRESHOLD):
                     self.ball_dropped[1] = True
-                    cv2.circle(frame, green_center, green_radius, (0,255,0), cv2.FILLED)
+                    cv2.circle(frame, green_center, green_radius, (0, 255, 0), cv2.FILLED)
                 else:
-                    cv2.circle(frame, green_center, green_radius, (0,255,0), 2)
+                    cv2.circle(frame, green_center, green_radius, (0, 255, 0), 2)
             if orange_radius is not None:
                 if test_ball_dropped(orange_center, left_wrist, right_wrist, self.DROPPED_BALL_THRESHOLD):
                     self.ball_dropped[2] = True
-                    cv2.circle(frame, orange_center, orange_radius, (255,0,0), cv2.FILLED)
+                    cv2.circle(frame, orange_center, orange_radius, (255, 0, 0), cv2.FILLED)
                 else:
-                    cv2.circle(frame, orange_center, orange_radius, (255,0,0), 2)
+                    cv2.circle(frame, orange_center, orange_radius, (255, 0, 0), 2)
 
         # Overlay the current values of the "ball_dropped" array. The values are in "Red, Green, Orange" order.
         cv2.putText(frame, str(self.ball_dropped), (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 2)
@@ -172,7 +174,17 @@ class VisualizationDemo(object):
             return vis_frame
 
         def match_frame_height(frame_1, frame_2):
-            pass
+            height_1, height_2 = int(frame_1.shape[0]), int(
+                frame_2.shape[0])
+            print(height_2, height_1)
+            difference = abs(height_1 - height_2)
+            border_type = cv2.BORDER_CONSTANT
+            if height_1 > height_2:
+                extended_frame = cv2.copyMakeBorder(frame_2, 0, difference, 0, 0, border_type, None, [0, 0, 0])
+                return np.hstack((frame_1, extended_frame))
+            else:
+                extended_frame = cv2.copyMakeBorder(frame_1, 0, difference, 0, 0, border_type, None, [0, 0, 0])
+                return np.hstack((extended_frame, frame_2))
 
         frame_gen_ref = self._frame_from_video(ref_video)
         frame_gen_analysis = self._frame_from_video(analysis_video)
@@ -196,8 +208,8 @@ class VisualizationDemo(object):
                 yield process_predictions(frame, predictions)
         else:
             for ref_frame, analysis_frame in zip(frame_gen_ref, frame_gen_analysis):
-                yield np.hstack((process_predictions(ref_frame, self.predictor(ref_frame)),
-                                process_predictions(analysis_frame, self.predictor(analysis_frame))))
+                yield match_frame_height(process_predictions(ref_frame, self.predictor(ref_frame)),
+                                         process_predictions(analysis_frame, self.predictor(analysis_frame)))
 
 
 class AsyncPredictor:
