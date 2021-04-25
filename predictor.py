@@ -1,8 +1,6 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import atexit
 import bisect
 import multiprocessing as mp
-from collections import deque
 import cv2
 import numpy as np
 import torch
@@ -12,10 +10,8 @@ from detectron2.engine.defaults import DefaultPredictor
 from detectron2.utils.video_visualizer import VideoVisualizer
 from detectron2.utils.visualizer import ColorMode, Visualizer
 
-from track_balls import get_ball_coordinates, test_ball_dropped
 
-
-class VisualizationDemo(object):
+class GolfSwingAnalyser(object):
     def __init__(self, cfg, instance_mode=ColorMode.IMAGE, parallel=False):
         """
         Args:
@@ -76,69 +72,6 @@ class VisualizationDemo(object):
             else:
                 break
 
-    def juggling_check(self, predictions, frame):
-        """
-        Perform ball segmentation and ball drop detection.
-
-        Args:
-            predictions (Instances): the output of an instance detection/segmentation
-                    model. Following fields will be used:
-                    "pred_keypoints"
-            frame (ndarray): an BGR image of shape (H, W, C), in the range [0, 255].
-            
-        Yields:
-            ndarray: BGR visualizations of each video frame.
-        """
-        if getattr(self, 'ball_dropped', None) is None:
-            # NOTE
-            # In the interest of reducing the scope of modifications, this has been
-            # implemented here. This is not really a good approach, however.
-            # You're much better off initialising these variables in the __init__ method.
-            self.ball_dropped = [False, False,
-                                 False]  # Keeping track of whether the balls have been dropped (red, green, orange).
-            self.DROPPED_BALL_THRESHOLD = 400  # Number of pixels below the nearest wrist to be considered "dropped".
-
-        if len(predictions) > 0:
-            keypoint_names = self.metadata.get("keypoint_names")
-            keypoints = predictions.get('pred_keypoints').squeeze()
-            left_wrist_index = keypoint_names.index('left_wrist')
-            right_wrist_index = keypoint_names.index('right_wrist')
-            left_wrist = keypoints[left_wrist_index]
-            right_wrist = keypoints[right_wrist_index]
-
-            # Find the locations of the three balls using colour segmentation in the HSV colour space.
-            hsv_img = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-            red_center, red_radius, green_center, green_radius, orange_center, orange_radius = get_ball_coordinates(
-                hsv_img)
-
-            # Sometimes the balls are obscured by the juggler's hands. If that's the case, skip the test.
-            # Otherwise, check whether the balls have been dropped or not.
-            # If a ball has been dropped, update its state in the ball_dropped array, and mark the ball on the screen
-            # with a filled in circle instead of an outline.
-            if red_radius is not None:
-                if test_ball_dropped(red_center, left_wrist, right_wrist, self.DROPPED_BALL_THRESHOLD):
-                    self.ball_dropped[0] = True
-                    cv2.circle(frame, red_center, red_radius, (0, 0, 255), cv2.FILLED)
-                else:
-                    cv2.circle(frame, red_center, red_radius, (0, 0, 255), 2)
-            if green_radius is not None:
-                if test_ball_dropped(green_center, left_wrist, right_wrist, self.DROPPED_BALL_THRESHOLD):
-                    self.ball_dropped[1] = True
-                    cv2.circle(frame, green_center, green_radius, (0, 255, 0), cv2.FILLED)
-                else:
-                    cv2.circle(frame, green_center, green_radius, (0, 255, 0), 2)
-            if orange_radius is not None:
-                if test_ball_dropped(orange_center, left_wrist, right_wrist, self.DROPPED_BALL_THRESHOLD):
-                    self.ball_dropped[2] = True
-                    cv2.circle(frame, orange_center, orange_radius, (255, 0, 0), cv2.FILLED)
-                else:
-                    cv2.circle(frame, orange_center, orange_radius, (255, 0, 0), 2)
-
-        # Overlay the current values of the "ball_dropped" array. The values are in "Red, Green, Orange" order.
-        cv2.putText(frame, str(self.ball_dropped), (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 2)
-
-        return frame
-
     def run_on_video(self, ref_video, analysis_video):
         """
         Visualizes predictions on frames of the input video.
@@ -174,9 +107,12 @@ class VisualizationDemo(object):
             return vis_frame
 
         def match_frame_height(frame_1, frame_2):
+            """
+            Adds a border to whichever of frame_1 or frame_2 is shorter and then
+            concatenates the frames together
+            """
             height_1, height_2 = int(frame_1.shape[0]), int(
                 frame_2.shape[0])
-            print(height_2, height_1)
             difference = abs(height_1 - height_2)
             border_type = cv2.BORDER_CONSTANT
             if height_1 > height_2:
