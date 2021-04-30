@@ -87,6 +87,7 @@ class GolfSwingAnalyser(object):
         video_visualizer = VideoVisualizer(self.metadata, self.instance_mode)
 
         def process_predictions(frame, predictions, reference=None):
+            generated_reference = None
             if "instances" in predictions:
                 # Move the predictions tensor off the GPU so we can access the
                 # data with the CPU.
@@ -96,20 +97,24 @@ class GolfSwingAnalyser(object):
                 # the associated overlays.
                 # Draw the neural network overlay (object bounding box, and body
                 # keypoints).
-                vis_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+
+                if reference is not None:
+                    vis_frame = angles.angles_check(frame, predictions, reference, self.metadata)
+                else:
+                    vis_frame, generated_reference = angles.create_reference(frame, predictions, self.metadata)
+
+                vis_frame = cv2.cvtColor(vis_frame, cv2.COLOR_BGR2RGB)
                 vis_frame = video_visualizer.draw_instance_predictions(vis_frame, predictions)
                 vis_frame = vis_frame.get_image()
                 vis_frame = cv2.cvtColor(vis_frame, cv2.COLOR_RGB2BGR)
-
-                if reference is not None:
-                    vis_frame = angles.angles_check(vis_frame, predictions, reference, self.metadata)
-                else:
-                    vis_frame, generated_reference = angles.create_reference(vis_frame, predictions, self.metadata)
-                    return vis_frame, generated_reference
             else:
                 vis_frame = frame
 
-            return vis_frame
+            if generated_reference is not None:
+                return vis_frame, generated_reference
+            else:
+                return vis_frame
 
         def match_frame_height(frame_1, frame_2):
             """
@@ -132,7 +137,7 @@ class GolfSwingAnalyser(object):
             Creates the analysed frame from the reference and analysis frame.
             """
             ref_pred, angle_reference = process_predictions(ref_frame, self.predictor(ref_frame))
-            analysis_pred = process_predictions(analysis_frame, self.predictor(ref_frame), angle_reference)
+            analysis_pred = process_predictions(analysis_frame, self.predictor(analysis_frame), angle_reference)
             return match_frame_height(ref_pred, analysis_pred)
 
         frame_gen_ref = self._frame_from_video(ref_video)

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+rm test.mkv
+
 # Install detectron2
 if [ -z "$(pip3 list | grep detectron2)" ]
 then
@@ -24,7 +26,7 @@ yes | cp -rf ../*.mp4 ./demo/
 cd demo
 
 # Run the model on the webcam.
-python3 demo.py --ref-video ref_vid.mp4 --analysis-video analysis_vid.mp4 --confidence-threshold 0.99 --output ../../test.mkv --config-file ../configs/COCO-Keypoints/keypoint_rcnn_R_50_FPN_3x.yaml --opts MODEL.WEIGHTS detectron2://COCO-Keypoints/keypoint_rcnn_R_50_FPN_3x/137849621/model_final_a6e10b.pkl
+python3 demo.py --ref-video test1.mp4 --analysis-video test1.mp4 --confidence-threshold 0.99 --output ../../analysis-output.mkv --config-file ../configs/COCO-Keypoints/keypoint_rcnn_R_50_FPN_3x.yaml --opts MODEL.WEIGHTS detectron2://COCO-Keypoints/keypoint_rcnn_R_50_FPN_3x/137849621/model_final_a6e10b.pkl
 
 rm *.*
 git reset --hard HEAD
