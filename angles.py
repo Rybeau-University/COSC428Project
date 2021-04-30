@@ -14,10 +14,10 @@ def collinear(point_1, point_2, point_3):
         triangle. We have skipped
         multiplication with 0.5 to
         avoid floating point computations """
-
+    distance_wrist_to_shoulder = math.sqrt((point_2[0] - point_3[0])**2 + (point_2[1] - point_3[1])**2)
+    distance_elbow_to_shoulder = math.sqrt((point_1[0] - point_2[0]) ** 2 + (point_1[1] - point_2[1]) ** 2)
     a = point_1[0] * (point_2[1] - point_3[1]) + point_2[0] * (point_3[1] - point_1[1]) + point_3[0] * (point_1[1] - point_2[1])
-    print(a/2)
-    return abs(a/2) < 7500
+    return abs(a/2) < 7500 and distance_wrist_to_shoulder > 400 and distance_elbow_to_shoulder > 175
 
 
 def calculate_heatmap_colour(reference, current):
