@@ -4,6 +4,7 @@ import multiprocessing as mp
 import cv2
 import numpy as np
 import torch
+import angles
 
 from detectron2.data import MetadataCatalog
 from detectron2.engine.defaults import DefaultPredictor
@@ -85,7 +86,7 @@ class GolfSwingAnalyser(object):
         """
         video_visualizer = VideoVisualizer(self.metadata, self.instance_mode)
 
-        def process_predictions(frame, predictions):
+        def process_predictions(frame, predictions, reference=None):
             if "instances" in predictions:
                 # Move the predictions tensor off the GPU so we can access the
                 # data with the CPU.
@@ -93,14 +94,18 @@ class GolfSwingAnalyser(object):
 
                 # Perform the checks for the juggling algorithm, and draw
                 # the associated overlays.
-                vis_frame = frame
-
                 # Draw the neural network overlay (object bounding box, and body
                 # keypoints).
-                vis_frame = cv2.cvtColor(vis_frame, cv2.COLOR_BGR2RGB)
+                vis_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 vis_frame = video_visualizer.draw_instance_predictions(vis_frame, predictions)
                 vis_frame = vis_frame.get_image()
                 vis_frame = cv2.cvtColor(vis_frame, cv2.COLOR_RGB2BGR)
+
+                if reference is not None:
+                    vis_frame = angles.angles_check(vis_frame, predictions, reference, self.metadata)
+                else:
+                    vis_frame, generated_reference = angles.create_reference(vis_frame, predictions, self.metadata)
+                    return vis_frame, generated_reference
             else:
                 vis_frame = frame
 
@@ -122,12 +127,19 @@ class GolfSwingAnalyser(object):
                 extended_frame = cv2.copyMakeBorder(frame_1, 0, difference, 0, 0, border_type, None, [0, 0, 0])
                 return np.hstack((extended_frame, frame_2))
 
+        def create_frame(ref_frame, analysis_frame):
+            """
+            Creates the analysed frame from the reference and analysis frame.
+            """
+            ref_pred, angle_reference = process_predictions(ref_frame, self.predictor(ref_frame))
+            analysis_pred = process_predictions(analysis_frame, self.predictor(ref_frame), angle_reference)
+            return match_frame_height(ref_pred, analysis_pred)
+
         frame_gen_ref = self._frame_from_video(ref_video)
         frame_gen_analysis = self._frame_from_video(analysis_video)
 
         for ref_frame, analysis_frame in zip(frame_gen_ref, frame_gen_analysis):
-            yield match_frame_height(process_predictions(ref_frame, self.predictor(ref_frame)),
-                                     process_predictions(analysis_frame, self.predictor(analysis_frame)))
+            yield create_frame(ref_frame, analysis_frame)
 
 
 class AsyncPredictor:
