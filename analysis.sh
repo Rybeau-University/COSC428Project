@@ -1,6 +1,6 @@
 #!/bin/bash
 
-rm test.mkv
+rm analysis-output.mkv
 
 # Install detectron2
 if [ -z "$(pip3 list | grep detectron2)" ]
