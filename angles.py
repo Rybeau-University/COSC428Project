@@ -1,11 +1,23 @@
 import cv2
 import math
+import numpy
 
 INDICATOR_RADIUS = 40
 
 
 class KeypointError(Exception):
     pass
+
+
+def collinear(point_1, point_2, point_3):
+    """ Calculation the area of
+        triangle. We have skipped
+        multiplication with 0.5 to
+        avoid floating point computations """
+
+    a = point_1[0] * (point_2[1] - point_3[1]) + point_2[0] * (point_3[1] - point_1[1]) + point_3[0] * (point_1[1] - point_2[1])
+    print(a/2)
+    return abs(a/2) < 7500
 
 
 def calculate_heatmap_colour(reference, current):
@@ -16,15 +28,25 @@ def calculate_heatmap_colour(reference, current):
     return color
 
 
+def test(reference, current):
+    if current:
+        return (0, 255, 0)
+    else:
+        return (0, 0, 255)
+
+
 def draw_keypoints(frame, keypoints, analysis_dict=None, reference=None):
     for key in keypoints.keys():
         position = tuple([int(keypoints[key][0]), int(keypoints[key][1])])
         if (key == "left_shoulder" or key == "right_shoulder") and reference is not None:
             cv2.circle(frame, position, INDICATOR_RADIUS, calculate_heatmap_colour(reference["shoulders"],
-                                                                                   analysis_dict["shoulders"]), cv2.FILLED)
+                                                                                   analysis_dict["shoulders"]),
+                       cv2.FILLED)
         elif (key == "left_hip" or key == "right_hip") and reference is not None:
             cv2.circle(frame, position, INDICATOR_RADIUS, calculate_heatmap_colour(reference["hips"],
                                                                                    analysis_dict["hips"]), cv2.FILLED)
+        elif reference is not None and key in analysis_dict.keys() and key in reference.keys():
+            cv2.circle(frame, position, INDICATOR_RADIUS, test(reference[key], analysis_dict[key]), cv2.FILLED)
         else:
             cv2.circle(frame, position, INDICATOR_RADIUS, (0, 0, 255), cv2.FILLED)
 
@@ -45,6 +67,10 @@ def calculate_tilt(lead, follow):
     return angle
 
 
+def calculate_limb(angle_point, point_1, point_2):
+    return collinear(angle_point, point_1, point_2)
+
+
 def calculate_lengths(angle_point, point_2):
     """
     Calculates the lengths of the side of the triangle needed to calculate the joint angles
@@ -62,8 +88,18 @@ def calculate_lengths(angle_point, point_2):
 def calculate_analysis_dict(keypoints):
     analysis_dict = {
         "shoulders": calculate_tilt(keypoints["left_shoulder"], keypoints["right_shoulder"]),
-        "hips": calculate_tilt(keypoints["left_hip"], keypoints["right_hip"])
+        "hips": calculate_tilt(keypoints["left_hip"], keypoints["right_hip"]),
     }
+    # if "left_hip" in keypoints.keys() and "left_knee" in keypoints.keys() and "left_ankle" in keypoints.keys():
+    #     analysis_dict["left_knee"] = calculate_limb(keypoints['left_knee'], keypoints["left_hip"], keypoints["left_ankle"])
+    # if "right_hip" in keypoints.keys() and "right_knee" in keypoints.keys() and "right_ankle" in keypoints.keys():
+    #    analysis_dict["right_knee"] = calculate_limb(keypoints['right_knee'], keypoints["right_hip"], keypoints["right_ankle"])
+    if "right_shoulder" in keypoints.keys() and "right_elbow" in keypoints.keys() and "right_wrist" in keypoints.keys():
+         analysis_dict["right_elbow"] = calculate_limb(keypoints['right_elbow'], keypoints["right_shoulder"], keypoints["right_wrist"])
+    if "left_shoulder" in keypoints.keys() and "left_elbow" in keypoints.keys() and "left_wrist" in keypoints.keys():
+        analysis_dict["left_elbow"] = calculate_limb(keypoints['left_elbow'], keypoints["left_shoulder"],
+                                                     keypoints["left_wrist"])
+
     return analysis_dict
 
 
@@ -71,7 +107,7 @@ def calculate_angle(opp, adjacent):
     """
     Calculates the angle of a right angle triangle
     """
-    return math.degrees(math.atan((opp/adjacent)))
+    return math.degrees(math.atan((opp / adjacent)))
 
 
 def angles_check(frame, predictions, reference, metadata):
