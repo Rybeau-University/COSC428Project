@@ -109,7 +109,6 @@ def calculate_analysis_dict(keypoints):
     if "left_shoulder" in keypoints.keys() and "left_elbow" in keypoints.keys() and "left_wrist" in keypoints.keys():
         analysis_dict["left_elbow"] = calculate_limb(keypoints['left_elbow'], keypoints["left_shoulder"],
                                                      keypoints["left_wrist"])
-    print(analysis_dict)
     return analysis_dict
 
 
@@ -125,13 +124,8 @@ def calculate_vector_angle(vector_1, vector_2):
     """
     Calculates the angle between two vectors.
     """
-    print(vector_1, vector_2)
     dot = dot_product(vector_1, vector_2)
-    print(dot_product(vector_1, vector_2))
-    print(two_norm(vector_1))
-    print(two_norm(vector_2))
     cos_angle = float(dot / (two_norm(vector_1) * two_norm(vector_2)))
-    print(cos_angle)
     return math.degrees(math.acos(cos_angle))
 
 
