@@ -44,6 +44,11 @@ def get_parser():
     )
 
     parser.add_argument(
+        "--opposite-hands",
+        help="The players in the two videos have difference dominant hands.",
+    )
+
+    parser.add_argument(
         "--confidence-threshold",
         type=float,
         default=0.5,
@@ -67,7 +72,7 @@ if __name__ == "__main__":
 
     cfg = setup_cfg(args)
 
-    demo = GolfSwingAnalyser(cfg)
+    analyser = GolfSwingAnalyser(cfg)
 
     if args.ref_video and args.analysis_video:
         analysis_video = cv2.VideoCapture(args.analysis_video)
@@ -77,6 +82,10 @@ if __name__ == "__main__":
         frames_per_second = ref_video.get(cv2.CAP_PROP_FPS)
         num_frames = int(ref_video.get(cv2.CAP_PROP_FRAME_COUNT))
         basename = WINDOW_NAME
+
+        if args.opposite_hands:
+            analyser.opposite_hands = True
+
 
         if args.output:
             if os.path.isdir(args.output):
@@ -96,7 +105,7 @@ if __name__ == "__main__":
             )
         assert os.path.isfile(args.ref_video)
         assert os.path.isfile(args.analysis_video)
-        for vis_frame in tqdm.tqdm(demo.run_on_video(ref_video, analysis_video), total=num_frames):
+        for vis_frame in tqdm.tqdm(analyser.run_on_video(ref_video, analysis_video), total=num_frames):
             if args.output:
                 output_file.write(vis_frame)
             else:
