@@ -21,6 +21,7 @@ class GolfSwingAnalyser(object):
             parallel (bool): whether to run the model in different processes from visualization.
                 Useful since the visualization logic can be slow.
         """
+        self.opposite_hands = False
         self.metadata = MetadataCatalog.get(
             cfg.DATASETS.TEST[0] if len(cfg.DATASETS.TEST) else "__unused"
         )
@@ -97,17 +98,15 @@ class GolfSwingAnalyser(object):
                 # the associated overlays.
                 # Draw the neural network overlay (object bounding box, and body
                 # keypoints).
-
-
-                if reference is not None:
-                    vis_frame = angles.angles_check(frame, predictions, reference, self.metadata)
-                else:
-                    vis_frame, generated_reference = angles.create_reference(frame, predictions, self.metadata)
-
-                vis_frame = cv2.cvtColor(vis_frame, cv2.COLOR_BGR2RGB)
+                vis_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 vis_frame = video_visualizer.draw_instance_predictions(vis_frame, predictions)
                 vis_frame = vis_frame.get_image()
                 vis_frame = cv2.cvtColor(vis_frame, cv2.COLOR_RGB2BGR)
+
+                if reference is not None:
+                    vis_frame = angles.angles_check(vis_frame, predictions, reference, self.metadata)
+                else:
+                    vis_frame, generated_reference = angles.create_reference(vis_frame, predictions, self.metadata)
             else:
                 vis_frame = frame
 
@@ -137,7 +136,10 @@ class GolfSwingAnalyser(object):
             Creates the analysed frame from the reference and analysis frame.
             """
             ref_pred, angle_reference = process_predictions(ref_frame, self.predictor(ref_frame))
-            analysis_pred = process_predictions(analysis_frame, self.predictor(analysis_frame), angle_reference)
+            if self.opposite_hands:
+                analysis_pred = process_predictions(cv2.flip(analysis_frame, 1), self.predictor(cv2.flip(analysis_frame, 1),), angle_reference)
+            else:
+                analysis_pred = process_predictions(analysis_frame, self.predictor(analysis_frame), angle_reference)
             return match_frame_height(ref_pred, analysis_pred)
 
         frame_gen_ref = self._frame_from_video(ref_video)
