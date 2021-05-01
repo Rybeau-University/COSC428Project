@@ -2,7 +2,7 @@ import cv2
 import math
 import numpy
 
-INDICATOR_RADIUS = 40
+INDICATOR_RADIUS = 10
 
 
 class KeypointError(Exception):
@@ -18,10 +18,11 @@ def collinear(point_1, point_2, point_3):
         triangle. We have skipped
         multiplication with 0.5 to
         avoid floating point computations """
-    distance_wrist_to_shoulder = math.sqrt((point_2[0] - point_3[0])**2 + (point_2[1] - point_3[1])**2)
+    distance_wrist_to_shoulder = math.sqrt((point_2[0] - point_3[0]) ** 2 + (point_2[1] - point_3[1]) ** 2)
     distance_elbow_to_shoulder = math.sqrt((point_1[0] - point_2[0]) ** 2 + (point_1[1] - point_2[1]) ** 2)
-    a = point_1[0] * (point_2[1] - point_3[1]) + point_2[0] * (point_3[1] - point_1[1]) + point_3[0] * (point_1[1] - point_2[1])
-    return abs(a/2) < 7500 and distance_wrist_to_shoulder > 400 and distance_elbow_to_shoulder > 175
+    a = point_1[0] * (point_2[1] - point_3[1]) + point_2[0] * (point_3[1] - point_1[1]) + point_3[0] * (
+                point_1[1] - point_2[1])
+    return abs(a / 2) < 7500 and distance_wrist_to_shoulder > 400 and distance_elbow_to_shoulder > 175
 
 
 def calculate_heatmap_colour(reference, current):
@@ -30,13 +31,6 @@ def calculate_heatmap_colour(reference, current):
     red = 10 * difference
     color = (0, green, red)
     return color
-
-
-def test(reference, current):
-    if current:
-        return (0, 255, 0)
-    else:
-        return (0, 0, 255)
 
 
 def draw_keypoints(frame, keypoints, analysis_dict=None, reference=None):
@@ -50,10 +44,10 @@ def draw_keypoints(frame, keypoints, analysis_dict=None, reference=None):
             cv2.circle(frame, position, INDICATOR_RADIUS, calculate_heatmap_colour(reference["hips"],
                                                                                    analysis_dict["hips"]), cv2.FILLED)
         elif reference is not None and key in analysis_dict.keys() and key in reference.keys():
-            cv2.circle(frame, position, INDICATOR_RADIUS, calculate_heatmap_colour(reference[key], analysis_dict[key]), cv2.FILLED)
-        else:
-            cv2.circle(frame, position, INDICATOR_RADIUS, (0, 0, 255), cv2.FILLED)
-
+            cv2.circle(frame, position, INDICATOR_RADIUS, calculate_heatmap_colour(reference[key], analysis_dict[key]),
+                       cv2.FILLED)
+            cv2.putText(frame, str(analysis_dict[key]), position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1,
+                        cv2.LINE_AA)
     return frame
 
 
@@ -72,13 +66,10 @@ def calculate_tilt(lead, follow):
 
 
 def calculate_limb(angle_point, point_1, point_2):
-    if not collinear(angle_point, point_1, point_2):
-        vector_1 = create_vector(angle_point, point_1)
-        vector_2 = create_vector(angle_point, point_2)
-        angle = calculate_vector_angle(vector_1, vector_2)
-        return angle
-    else:
-        return 0
+    vector_1 = create_vector(angle_point, point_1)
+    vector_2 = create_vector(angle_point, point_2)
+    angle = calculate_vector_angle(vector_1, vector_2)
+    return angle
 
 
 def calculate_lengths(angle_point, point_2):
@@ -100,12 +91,15 @@ def calculate_analysis_dict(keypoints):
         "shoulders": calculate_tilt(keypoints["left_shoulder"], keypoints["right_shoulder"]),
         "hips": calculate_tilt(keypoints["left_hip"], keypoints["right_hip"]),
     }
-    # if "left_hip" in keypoints.keys() and "left_knee" in keypoints.keys() and "left_ankle" in keypoints.keys():
-    #     analysis_dict["left_knee"] = calculate_limb(keypoints['left_knee'], keypoints["left_hip"], keypoints["left_ankle"])
-    # if "right_hip" in keypoints.keys() and "right_knee" in keypoints.keys() and "right_ankle" in keypoints.keys():
-    #    analysis_dict["right_knee"] = calculate_limb(keypoints['right_knee'], keypoints["right_hip"], keypoints["right_ankle"])
+    if "left_hip" in keypoints.keys() and "left_knee" in keypoints.keys() and "left_ankle" in keypoints.keys():
+        analysis_dict["left_knee"] = calculate_limb(keypoints['left_knee'], keypoints["left_hip"],
+                                                    keypoints["left_ankle"])
+    if "right_hip" in keypoints.keys() and "right_knee" in keypoints.keys() and "right_ankle" in keypoints.keys():
+        analysis_dict["right_knee"] = calculate_limb(keypoints['right_knee'], keypoints["right_hip"],
+                                                     keypoints["right_ankle"])
     if "right_shoulder" in keypoints.keys() and "right_elbow" in keypoints.keys() and "right_wrist" in keypoints.keys():
-         analysis_dict["right_elbow"] = calculate_limb(keypoints['right_elbow'], keypoints["right_shoulder"], keypoints["right_wrist"])
+        analysis_dict["right_elbow"] = calculate_limb(keypoints['right_elbow'], keypoints["right_shoulder"],
+                                                      keypoints["right_wrist"])
     if "left_shoulder" in keypoints.keys() and "left_elbow" in keypoints.keys() and "left_wrist" in keypoints.keys():
         analysis_dict["left_elbow"] = calculate_limb(keypoints['left_elbow'], keypoints["left_shoulder"],
                                                      keypoints["left_wrist"])
@@ -113,7 +107,7 @@ def calculate_analysis_dict(keypoints):
 
 
 def dot_product(v1, v2):
-    return v1[0]*v2[0] + v1[1]*v2[1]
+    return v1[0] * v2[0] + v1[1] * v2[1]
 
 
 def two_norm(v):
@@ -126,6 +120,13 @@ def calculate_vector_angle(vector_1, vector_2):
     """
     dot = dot_product(vector_1, vector_2)
     cos_angle = float(dot / (two_norm(vector_1) * two_norm(vector_2)))
+    # Buffer for floating point errors
+    if 1.2 > cos_angle > 1:
+        cos_angle = 1
+    elif -1.2 < cos_angle < -1:
+        cos_angle = -1
+    elif -1.2 > cos_angle or 1.2 < cos_angle:
+        raise KeypointError("Ratio for angle is outside of the domain.")
     return math.degrees(math.acos(cos_angle))
 
 
@@ -164,7 +165,9 @@ def get_keypoints(predictions, metadata):
             "left_hip": keypoints[keypoint_names.index('left_hip')],
             "right_hip": keypoints[keypoint_names.index('right_hip')],
             "left_shoulder": keypoints[keypoint_names.index('left_shoulder')],
-            "right_shoulder": keypoints[keypoint_names.index('right_shoulder')]
+            "right_shoulder": keypoints[keypoint_names.index('right_shoulder')],
+            "left_ankle": keypoints[keypoint_names.index('left_ankle')],
+            "right_ankle": keypoints[keypoint_names.index('right_ankle')]
         }
         return keypoint_dict
     else:
