@@ -9,6 +9,10 @@ class KeypointError(Exception):
     pass
 
 
+def create_vector(point_1, point_2):
+    return tuple([point_2[0] - point_1[0], point_2[1] - point_1[1]])
+
+
 def collinear(point_1, point_2, point_3):
     """ Calculation the area of
         triangle. We have skipped
@@ -46,7 +50,7 @@ def draw_keypoints(frame, keypoints, analysis_dict=None, reference=None):
             cv2.circle(frame, position, INDICATOR_RADIUS, calculate_heatmap_colour(reference["hips"],
                                                                                    analysis_dict["hips"]), cv2.FILLED)
         elif reference is not None and key in analysis_dict.keys() and key in reference.keys():
-            cv2.circle(frame, position, INDICATOR_RADIUS, test(reference[key], analysis_dict[key]), cv2.FILLED)
+            cv2.circle(frame, position, INDICATOR_RADIUS, calculate_heatmap_colour(reference[key], analysis_dict[key]), cv2.FILLED)
         else:
             cv2.circle(frame, position, INDICATOR_RADIUS, (0, 0, 255), cv2.FILLED)
 
@@ -68,7 +72,13 @@ def calculate_tilt(lead, follow):
 
 
 def calculate_limb(angle_point, point_1, point_2):
-    return collinear(angle_point, point_1, point_2)
+    if not collinear(angle_point, point_1, point_2):
+        vector_1 = create_vector(angle_point, point_1)
+        vector_2 = create_vector(angle_point, point_2)
+        angle = calculate_vector_angle(vector_1, vector_2)
+        return angle
+    else:
+        return 0
 
 
 def calculate_lengths(angle_point, point_2):
@@ -99,8 +109,30 @@ def calculate_analysis_dict(keypoints):
     if "left_shoulder" in keypoints.keys() and "left_elbow" in keypoints.keys() and "left_wrist" in keypoints.keys():
         analysis_dict["left_elbow"] = calculate_limb(keypoints['left_elbow'], keypoints["left_shoulder"],
                                                      keypoints["left_wrist"])
-
+    print(analysis_dict)
     return analysis_dict
+
+
+def dot_product(v1, v2):
+    return v1[0]*v2[0] + v1[1]*v2[1]
+
+
+def two_norm(v):
+    return math.sqrt(dot_product(v, v))
+
+
+def calculate_vector_angle(vector_1, vector_2):
+    """
+    Calculates the angle between two vectors.
+    """
+    print(vector_1, vector_2)
+    dot = dot_product(vector_1, vector_2)
+    print(dot_product(vector_1, vector_2))
+    print(two_norm(vector_1))
+    print(two_norm(vector_2))
+    cos_angle = float(dot / (two_norm(vector_1) * two_norm(vector_2)))
+    print(cos_angle)
+    return math.degrees(math.acos(cos_angle))
 
 
 def calculate_angle(opp, adjacent):
