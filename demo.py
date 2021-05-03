@@ -99,7 +99,7 @@ if __name__ == "__main__":
                 # some installation of opencv may not support x264 (due to its license),
                 # you can try other format (e.g. MPEG)
                 fourcc=cv2.VideoWriter_fourcc(*"MPEG"),
-                fps=float(frames_per_second),
+                fps=float(frames_per_second // 3),
                 frameSize=(width, height),
                 isColor=True,
             )
