@@ -1,6 +1,5 @@
 import cv2
 import math
-import numpy
 
 INDICATOR_RADIUS = 10
 
@@ -25,6 +24,19 @@ def collinear(point_1, point_2, point_3):
     return abs(a / 2) < 7500 and distance_wrist_to_shoulder > 400 and distance_elbow_to_shoulder > 175
 
 
+def output_angles(frame, analysis_dict, reference):
+    y_pos = 20
+    for key, value in analysis_dict.items():
+        if key in reference.keys():
+            text = "{}: Angle = {:.2f}, Diff = {:.2f}".format(key, value, value - reference[key])
+            cv2.putText(frame, text, (0, y_pos), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 0), 2,
+                cv2.LINE_AA)
+            cv2.putText(frame, text, (0, y_pos), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255), 1,
+                        cv2.LINE_AA)
+            y_pos += 20
+    return frame
+
+
 def calculate_heatmap_colour(reference, current):
     difference = abs(reference - current)
     green = max([0, 255 - (difference * 20)])
@@ -46,22 +58,17 @@ def draw_keypoints(frame, keypoints, analysis_dict=None, reference=None):
         elif reference is not None and key in analysis_dict.keys() and key in reference.keys():
             cv2.circle(frame, position, INDICATOR_RADIUS, calculate_heatmap_colour(reference[key], analysis_dict[key]),
                        cv2.FILLED)
-            cv2.putText(frame, str(analysis_dict[key]), position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1,
-                        cv2.LINE_AA)
     return frame
 
 
 def calculate_tilt(lead, follow):
     y_change = lead[1] - follow[1]
     if y_change < 0:
-        point_3 = tuple([int(follow[0]), int(lead[1])])
         angle = calculate_angle(abs(y_change), abs(lead[0] - follow[0]))
     elif y_change > 0:
-        point_3 = tuple([int(lead[0]), int(follow[1])])
         angle = 0 - calculate_angle(abs(y_change), abs(lead[0] - follow[0]))
     else:
         angle = 0
-        point_3 = None
     return angle
 
 
@@ -146,6 +153,7 @@ def angles_check(frame, predictions, reference, metadata):
     keypoints = get_keypoints(predictions, metadata)
     analysis_dict = calculate_analysis_dict(keypoints)
     vis_frame = draw_keypoints(frame, keypoints, analysis_dict, reference)
+    vis_frame = output_angles(vis_frame, analysis_dict, reference)
     return vis_frame
 
 
