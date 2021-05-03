@@ -127,7 +127,12 @@ def calculate_vector_angle(vector_1, vector_2):
         cos_angle = -1
     elif -1.2 > cos_angle or 1.2 < cos_angle:
         raise KeypointError("Ratio for angle is outside of the domain.")
-    return math.degrees(math.acos(cos_angle))
+    if cos_angle > 0:
+        multiplier = 1
+    else:
+        multiplier = -1
+    angle_of_interest = (180 - math.degrees(math.acos(cos_angle))) * multiplier
+    return angle_of_interest
 
 
 def calculate_angle(opp, adjacent):
