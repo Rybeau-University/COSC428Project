@@ -39,7 +39,7 @@ def output_angles(frame, analysis_dict, reference):
 
 def calculate_heatmap_colour(reference, current):
     difference = abs(reference - current)
-    green = max([0, 255 - (difference * 20)])
+    green = max([0, 255 - (difference * 10)])
     red = 10 * difference
     color = (0, green, red)
     return color

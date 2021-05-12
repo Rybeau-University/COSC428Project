@@ -80,7 +80,7 @@ if __name__ == "__main__":
         width = int(ref_video.get(cv2.CAP_PROP_FRAME_WIDTH) + analysis_video.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(max(ref_video.get(cv2.CAP_PROP_FRAME_HEIGHT), analysis_video.get(cv2.CAP_PROP_FRAME_HEIGHT)))
         frames_per_second = ref_video.get(cv2.CAP_PROP_FPS)
-        num_frames = int(ref_video.get(cv2.CAP_PROP_FRAME_COUNT))
+        num_frames = int(min(ref_video.get(cv2.CAP_PROP_FRAME_COUNT), analysis_video.get(cv2.CAP_PROP_FRAME_COUNT)))
         basename = WINDOW_NAME
 
         if args.opposite_hands:
