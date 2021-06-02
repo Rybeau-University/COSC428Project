@@ -1,4 +1,9 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+"""
+This is a version of the demo.py contained with detectron2 with
+slight modifications for processing the two videos at once. It creates the output video
+or OpenCV preview window using the analyser in predictor.py
+"""
+
 import argparse
 import multiprocessing as mp
 import os
@@ -28,6 +33,9 @@ def setup_cfg(args):
 
 
 def get_parser():
+    """
+    Defines the arguments available for running the program.
+    """
     parser = argparse.ArgumentParser(description="Golf Swing Analysis Using Pose Estimation")
     parser.add_argument(
         "--config-file",
@@ -40,7 +48,7 @@ def get_parser():
     parser.add_argument(
         "--output",
         help="A file or directory to save output visualizations. "
-        "If not given, will show output in an OpenCV window.",
+             "If not given, will show output in an OpenCV window.",
     )
 
     parser.add_argument(
@@ -72,6 +80,7 @@ if __name__ == "__main__":
 
     cfg = setup_cfg(args)
 
+    # Analyser defined in predictor.py
     analyser = GolfSwingAnalyser(cfg)
 
     if args.ref_video and args.analysis_video:
@@ -84,10 +93,11 @@ if __name__ == "__main__":
         basename = WINDOW_NAME
 
         if args.opposite_hands:
+            """Check if analysis video frames need to be flipped to match the reference"""
             analyser.opposite_hands = True
 
-
         if args.output:
+            """Check if output arguments exists and is valid"""
             if os.path.isdir(args.output):
                 output_fname = os.path.join(args.output, basename)
                 output_fname = os.path.splitext(output_fname)[0] + ".mkv"
@@ -105,6 +115,10 @@ if __name__ == "__main__":
             )
         assert os.path.isfile(args.ref_video)
         assert os.path.isfile(args.analysis_video)
+
+        """
+        Creation of the output file or OpenCV preview
+        """
         for vis_frame in tqdm.tqdm(analyser.run_on_video(ref_video, analysis_video), total=num_frames):
             if args.output:
                 output_file.write(vis_frame)

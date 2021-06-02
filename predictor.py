@@ -1,10 +1,16 @@
+"""
+This is a version of the demo predictor.py contained with detectron2 with
+slight modifications for processing the two videos at once and calling the appropriate
+functions from the swing_analysis.py file to perform and display the analysis.
+"""
+
 import atexit
 import bisect
 import multiprocessing as mp
 import cv2
 import numpy as np
 import torch
-import angles
+import swing_analysis
 
 from detectron2.data import MetadataCatalog
 from detectron2.engine.defaults import DefaultPredictor
@@ -79,8 +85,11 @@ class GolfSwingAnalyser(object):
         Visualizes predictions on frames of the input video.
 
         Args:
-            video (cv2.VideoCapture): a :class:`VideoCapture` object, whose source can be
-                either a webcam or a video file.
+            ref_video (cv2.VideoCapture): a :class:`VideoCapture` object, whose source can be
+                either a webcam or a video file. This is the reference video of the professional golfer
+                to be used for analysis.
+            analysis_video (cv2.VideoCapture): a :class:`VideoCapture` object, whose source can be
+                either a webcam or a video file. This is the video of the amateur golfer to be analysed
 
         Yields:
             ndarray: RGB visualizations of each video frame.
@@ -94,8 +103,6 @@ class GolfSwingAnalyser(object):
                 # data with the CPU.
                 predictions = predictions["instances"].to(self.cpu_device)
 
-                # Perform the checks for the juggling algorithm, and draw
-                # the associated overlays.
                 # Draw the neural network overlay (object bounding box, and body
                 # keypoints).
                 vis_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -103,10 +110,15 @@ class GolfSwingAnalyser(object):
                 vis_frame = vis_frame.get_image()
                 vis_frame = cv2.cvtColor(vis_frame, cv2.COLOR_RGB2BGR)
 
+                """
+                The following lines call the analysis functions defined in swing_analysis.py to perform the analysis. If
+                reference is not defined then we are analysing the reference video and will return the dictionary of 
+                angles. Else, we are analysing the amateur video and will return only the frame.
+                """
                 if reference is not None:
-                    vis_frame = angles.angles_check(vis_frame, predictions, reference, self.metadata)
+                    vis_frame = swing_analysis.analyse_swing(vis_frame, predictions, reference, self.metadata)
                 else:
-                    vis_frame, generated_reference = angles.create_reference(vis_frame, predictions, self.metadata)
+                    vis_frame, generated_reference = swing_analysis.create_reference(vis_frame, predictions, self.metadata)
             else:
                 vis_frame = frame
 

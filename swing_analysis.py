@@ -1,30 +1,39 @@
+"""
+This file contains the code related to performing the joint angle calculation, comparison
+and drawing of coloured markers on the frame.
+
+Author: Ryan Beaumont (2021)
+"""
+
 import cv2
 import math
 
+"""Radius of the coloured markers"""
 INDICATOR_RADIUS = 10
 
 
 class KeypointError(Exception):
+    """
+    Custom Exception used for throwing exceptions specifically
+    related to keypoint and joint angle calculation.
+    """
     pass
 
 
 def create_vector(point_1, point_2):
+    """
+    Creates a vector between two given points
+    """
     return tuple([point_2[0] - point_1[0], point_2[1] - point_1[1]])
 
 
-def collinear(point_1, point_2, point_3):
-    """ Calculation the area of
-        triangle. We have skipped
-        multiplication with 0.5 to
-        avoid floating point computations """
-    distance_wrist_to_shoulder = math.sqrt((point_2[0] - point_3[0]) ** 2 + (point_2[1] - point_3[1]) ** 2)
-    distance_elbow_to_shoulder = math.sqrt((point_1[0] - point_2[0]) ** 2 + (point_1[1] - point_2[1]) ** 2)
-    a = point_1[0] * (point_2[1] - point_3[1]) + point_2[0] * (point_3[1] - point_1[1]) + point_3[0] * (
-                point_1[1] - point_2[1])
-    return abs(a / 2) < 7500 and distance_wrist_to_shoulder > 400 and distance_elbow_to_shoulder > 175
-
-
 def output_angles(frame, analysis_dict, reference):
+    """
+    Outputs the angles and the differences at the top left of the frame
+    frame: Frame to apply text to
+    analysis_dict: dictionary of the joint angles of interest from the amateur
+    reference: dictionary of the joint angles of interest from the professional
+    """
     y_pos = 20
     for key, value in analysis_dict.items():
         if key in reference.keys():
@@ -37,8 +46,14 @@ def output_angles(frame, analysis_dict, reference):
     return frame
 
 
-def calculate_heatmap_colour(reference, current):
-    difference = abs(reference - current)
+def calculate_heatmap_colour(reference, analysis):
+    """
+    Calculates the colour of the marker based upon the difference between the amateur
+    and professional angle.
+    reference: The joint angle of the professional
+    analysis: The joint angle of the amateur
+    """
+    difference = abs(reference - analysis)
     green = max([0, 255 - (difference * 10)])
     red = 10 * difference
     color = (0, green, red)
@@ -46,6 +61,15 @@ def calculate_heatmap_colour(reference, current):
 
 
 def draw_keypoints(frame, keypoints, analysis_dict=None, reference=None):
+    """
+    Draws the coloured markers for the joint angles of interest onto the frame.
+    Keypoints, analysis_dict and reference share key values, these are used to draw
+    on the joint angles in the correct location.
+    frame: Frame to draw on
+    keypoints: the dictionary of keypoints from the Keypoint R-CNN
+    analysis_dict: the dictionary of joint angles for the amateur
+    reference: the dictionary of joint angles for the professional
+    """
     for key in keypoints.keys():
         position = tuple([int(keypoints[key][0]), int(keypoints[key][1])])
         if (key == "left_shoulder" or key == "right_shoulder") and reference is not None:
@@ -62,6 +86,12 @@ def draw_keypoints(frame, keypoints, analysis_dict=None, reference=None):
 
 
 def calculate_tilt(lead, follow):
+    """
+    Calculates the tilt of two joints in comparison to the horizontal plain.
+    Depending on the direction of the tilt this is made negative to differentiate it.
+    lead: leading shoulder position
+    follow: following joint position
+    """
     y_change = lead[1] - follow[1]
     if y_change < 0:
         angle = calculate_angle(abs(y_change), abs(lead[0] - follow[0]))
@@ -73,27 +103,23 @@ def calculate_tilt(lead, follow):
 
 
 def calculate_limb(angle_point, point_1, point_2):
+    """
+    Calculates the angle of a limb from the three points of that limb
+    angle_point: the point where the angle is being calculated for
+    point_1: One of the ends of the limb e.g. shoulder position
+    point_2: Other end of the limb e.g. wrist position
+    """
     vector_1 = create_vector(angle_point, point_1)
     vector_2 = create_vector(angle_point, point_2)
     angle = calculate_vector_angle(vector_1, vector_2)
     return angle
 
 
-def calculate_lengths(angle_point, point_2):
-    """
-    Calculates the lengths of the side of the triangle needed to calculate the joint angles
-    Returns longest side at index 0.
-    """
-    x_change = abs(angle_point[0] - point_2[0])
-    y_change = abs(angle_point[1] - point_2[1])
-    if angle_point[1] < point_2[1]:
-        point_3 = [int(point_2[0]), int(point_2[1] - y_change)]
-    else:
-        point_3 = [int(angle_point[0]), int(angle_point[1] - y_change)]
-    return tuple(point_3)
-
-
 def calculate_analysis_dict(keypoints):
+    """
+    Creates the dictionary of joint angles from the keypoints
+    outputted from Keypoint R-CNN.
+    """
     analysis_dict = {
         "shoulders": calculate_tilt(keypoints["left_shoulder"], keypoints["right_shoulder"]),
         "hips": calculate_tilt(keypoints["left_hip"], keypoints["right_hip"]),
@@ -114,16 +140,24 @@ def calculate_analysis_dict(keypoints):
 
 
 def dot_product(v1, v2):
+    """
+    Calculates the dot product of two vectors in R2
+    """
     return v1[0] * v2[0] + v1[1] * v2[1]
 
 
 def two_norm(v):
+    """
+    Calculates the two-norm of a vector
+    """
     return math.sqrt(dot_product(v, v))
 
 
 def calculate_vector_angle(vector_1, vector_2):
     """
-    Calculates the angle between two vectors.
+    Calculates the angle between two vectors using the cosine rule.
+    The angle is made negative depending upon the direction of the bend
+    to differentiate it from the same bend in the opposite direction.
     """
     dot = dot_product(vector_1, vector_2)
     cos_angle = float(dot / (two_norm(vector_1) * two_norm(vector_2)))
@@ -149,7 +183,14 @@ def calculate_angle(opp, adjacent):
     return math.degrees(math.atan((opp / adjacent)))
 
 
-def angles_check(frame, predictions, reference, metadata):
+def analyse_swing(frame, predictions, reference, metadata):
+    """
+    Performs the analysis and draws the visualisation for the amateur golfer.
+    frame: Frame of the video to draw on
+    predictions: Predictions outputted from Keypoint R-CNN
+    reference: the dictionary of joint angles for the professional
+    metadata: Metadata output from Keypoint R-CNN
+    """
     keypoints = get_keypoints(predictions, metadata)
     analysis_dict = calculate_analysis_dict(keypoints)
     vis_frame = draw_keypoints(frame, keypoints, analysis_dict, reference)
@@ -158,6 +199,12 @@ def angles_check(frame, predictions, reference, metadata):
 
 
 def create_reference(frame, predictions, metadata):
+    """
+    Creates the reference dictionary from the frame, predictions and metadata for the professional golfer.
+    frame: Frame to draw on
+    predictions: Predictions outputted from Keypoint R-CNN
+    metadata: Metadata output from Keypoint R-CNN
+    """
     keypoints = get_keypoints(predictions, metadata)
     analysis_dict = calculate_analysis_dict(keypoints)
     vis_frame = draw_keypoints(frame, keypoints)
@@ -165,6 +212,11 @@ def create_reference(frame, predictions, metadata):
 
 
 def get_keypoints(predictions, metadata):
+    """
+    Returns a dictionary of the keypoints and their positions in the frame.
+    predictions: Predictions outputted from Keypoint R-CNN
+    metadata: Metadata output from Keypoint R-CNN
+    """
     if len(predictions) > 0:
         keypoint_names = metadata.get("keypoint_names")
         keypoints = predictions.get('pred_keypoints').squeeze()
