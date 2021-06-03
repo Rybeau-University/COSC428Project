@@ -13,7 +13,7 @@ angles of a professional golfer to that of an amateur.
 ## Running the Demo
 To run a demo of the program run the command `bash analysis.sh` in the terminal.
 This will run a demo of the program using the two videos contained in the demo folder.
-The output of the demo will be in the root directory of this project.
+The output of the demo will be in the root directory of the project.
 
 ## Running with Other Videos
 The command in within analysis.sh can be adjusted to take other videos as input.
@@ -29,8 +29,8 @@ folder it will need the full path.
 * --analysis-video: Path to the video to perform the analysis on. If it is not in the same
 folder it will need the full path.
   
-* --opposite-hands: A flag for if the two golfers in the clips are opposite handed. Will flip
-the frame of the analysis video to match the reference.
+* --opposite-hands: A flag for if the two golfers in the clips have opposite dominant hands. This will flip
+the frame of the analysis video to match the reference. (true/false)
   
 * --output: The output file name and destination.
 
@@ -54,7 +54,7 @@ slight modifications for processing the two videos at once and calling the appro
 functions from the swing_analysis.py file to perform and display the analysis.
 
 ### swing_analysis.py
-Swing analysis.py contains the code related to performing the joint angle calculation, comparison
+swing_analysis.py contains the code related to performing the joint angle calculation, comparison
 and drawing of coloured markers on the frame.
 
 ### analysis.sh
