@@ -130,7 +130,7 @@ class GolfSwingAnalyser(object):
         def match_frame_height(frame_1, frame_2):
             """
             Adds a border to whichever of frame_1 or frame_2 is shorter and then
-            concatenates the frames together
+            stitches the frames together
             """
             height_1, height_2 = int(frame_1.shape[0]), int(
                 frame_2.shape[0])
@@ -145,7 +145,7 @@ class GolfSwingAnalyser(object):
 
         def create_frame(ref_frame, analysis_frame):
             """
-            Creates the side by side analysed output frame frame from the reference and analysis frame.
+            Creates the side by side analysed output frame from the reference and analysis frame.
             """
             ref_pred, angle_reference = process_predictions(ref_frame, self.predictor(ref_frame))
             if self.opposite_hands:
