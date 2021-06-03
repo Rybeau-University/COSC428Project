@@ -22,14 +22,14 @@ class KeypointError(Exception):
 
 def create_vector(point_1, point_2):
     """
-    Creates a vector between two given points
+    Returns the vector between two given points
     """
     return tuple([point_2[0] - point_1[0], point_2[1] - point_1[1]])
 
 
 def output_angles(frame, analysis_dict, reference):
     """
-    Outputs the angles and the differences at the top left of the frame
+    Returns the angles and the differences at the top left of the frame
     frame: Frame to apply text to
     analysis_dict: dictionary of the joint angles of interest from the amateur
     reference: dictionary of the joint angles of interest from the professional
@@ -66,7 +66,7 @@ def draw_keypoints(frame, keypoints, analysis_dict=None, reference=None):
     Keypoints, analysis_dict and reference share key values, these are used to draw
     on the joint angles in the correct location.
     frame: Frame to draw on
-    keypoints: the dictionary of keypoints from the Keypoint R-CNN
+    keypoints: the dictionary of joint locations in the frame
     analysis_dict: the dictionary of joint angles for the amateur
     reference: the dictionary of joint angles for the professional
     """
@@ -117,8 +117,8 @@ def calculate_limb(angle_point, point_1, point_2):
 
 def calculate_analysis_dict(keypoints):
     """
-    Creates the dictionary of joint angles from the keypoints
-    outputted from Keypoint R-CNN.
+    Creates the dictionary of joint angles from the dictionary of locations of joints in the frame.
+    keypoints: the dictionary of joint locations in the frame
     """
     analysis_dict = {
         "shoulders": calculate_tilt(keypoints["left_shoulder"], keypoints["right_shoulder"]),
@@ -141,14 +141,14 @@ def calculate_analysis_dict(keypoints):
 
 def dot_product(v1, v2):
     """
-    Calculates the dot product of two vectors in R2
+    Returns the dot product of two vectors in R2
     """
     return v1[0] * v2[0] + v1[1] * v2[1]
 
 
 def two_norm(v):
     """
-    Calculates the two-norm of a vector
+    Returns the two-norm of a vector
     """
     return math.sqrt(dot_product(v, v))
 
@@ -178,7 +178,9 @@ def calculate_vector_angle(vector_1, vector_2):
 
 def calculate_angle(opp, adjacent):
     """
-    Calculates the angle of a right angle triangle
+    Returns the angle of interest in a right angle triangle using the opposite and adjacent sides
+    opp: opposite side length
+    adjacent: adjacent side length
     """
     return math.degrees(math.atan((opp / adjacent)))
 
@@ -187,7 +189,7 @@ def analyse_swing(frame, predictions, reference, metadata):
     """
     Performs the analysis and draws the visualisation for the amateur golfer.
     frame: Frame of the video to draw on
-    predictions: Predictions outputted from Keypoint R-CNN
+    predictions: Predictions output from Keypoint R-CNN
     reference: the dictionary of joint angles for the professional
     metadata: Metadata output from Keypoint R-CNN
     """
@@ -213,7 +215,7 @@ def create_reference(frame, predictions, metadata):
 
 def get_keypoints(predictions, metadata):
     """
-    Returns a dictionary of the keypoints and their positions in the frame.
+    Returns a dictionary of the joints and their positions in the frame.
     predictions: Predictions outputted from Keypoint R-CNN
     metadata: Metadata output from Keypoint R-CNN
     """

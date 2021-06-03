@@ -145,7 +145,7 @@ class GolfSwingAnalyser(object):
 
         def create_frame(ref_frame, analysis_frame):
             """
-            Creates the analysed frame from the reference and analysis frame.
+            Creates the side by side analysed output frame frame from the reference and analysis frame.
             """
             ref_pred, angle_reference = process_predictions(ref_frame, self.predictor(ref_frame))
             if self.opposite_hands:
