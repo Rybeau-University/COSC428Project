@@ -26,7 +26,7 @@ yes | cp -rf ../*.mp4 ./demo/
 cd demo
 
 # Run the model on the webcam.
-python3 demo.py --ref-video justin_thomas_driver.mp4 --analysis-video /home/ryan/Desktop/COSC428Project/clive_driver/clive_driver_5.mp4 --opposite-hands true --confidence-threshold 0.99 --output ../../analysis-output.mkv --config-file ../configs/COCO-Keypoints/keypoint_rcnn_R_50_FPN_3x.yaml --opts MODEL.WEIGHTS detectron2://COCO-Keypoints/keypoint_rcnn_R_50_FPN_3x/137849621/model_final_a6e10b.pkl
+python3 demo.py --ref-video reference_video.mp4 --analysis-video analysis_video.mp4 --opposite-hands false --confidence-threshold 0.99 --output ../../analysis-output.mkv --config-file ../configs/COCO-Keypoints/keypoint_rcnn_R_50_FPN_3x.yaml --opts MODEL.WEIGHTS detectron2://COCO-Keypoints/keypoint_rcnn_R_50_FPN_3x/137849621/model_final_a6e10b.pkl
 
 rm *.*
 git reset --hard HEAD
