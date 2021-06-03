@@ -23,7 +23,7 @@ The command in within analysis.sh can be adjusted to take other videos as input.
 `
 
 #### Key Arguments
-* --ref-video: Path to the video to use a reference. If it is not in the same
+* --ref-video: Path to the video to use as the swing reference. If it is not in the same
 folder it will need the full path.
   
 * --analysis-video: Path to the video to perform the analysis on. If it is not in the same
@@ -33,7 +33,7 @@ folder it will need the full path.
   followed by any value in the command line it will flip the frame of the analysis video to match the reference.
   E.g. `--opposite-hands true` will flip the frame.
   
-* --output: The output file name and destination.
+* --output: The output file name and destination. This path is from the /demo/ directory in the detectron2 repository.
 
 * Details about other arguments can be found in the detectron2 documentation.
 
@@ -47,12 +47,12 @@ There are four files related to running the program.
 ### demo.py
 This is a version of the demo.py provided with the detectron2 repository with
 slight modifications for processing the two videos at once. It creates the output video
-or OpenCV preview window using the analyser in predictor.py
+or OpenCV preview window using the analyser in predictor.py.
 
 ### predictor.py
 This is a version of the demo predictor.py contained with the detectron2 repository.
 Some modifications have been made for processing the two videos at once and calling the appropriate
-functions from the swing_analysis.py file to perform and display the analysis.
+functions from the swing_analysis.py file to perform/display the analysis.
 
 ### swing_analysis.py
 swing_analysis.py contains the code related to performing the joint angle calculation, comparison
@@ -61,14 +61,14 @@ and drawing of coloured markers on the frame.
 ### analysis.sh
 This file is a bash script to make setting up and running the program simpler. Upon
 running `bash analysis.sh` the script will pull the needed repositories and move the
-demo.py, predictor.py, analysis.sh and video files within the /demo/ directory in the detectron2 repository replacing the files
+demo.py, predictor.py, analysis.sh and video files into the /demo/ directory in the detectron2 repository replacing the files
 within. It will then run the analysis program and perform clean up of the detectron2 repository upon completion.
 
 ## Things to Note
-* Both the videos need to be at the same frame rate. Preferably 60 fps or it will be unlikely that
+* Both the videos need to be at the same frame rate. Preferably 60 fps, or it will be unlikely that
 many swing events have been captured due to the speed of the swing.
   
-* The two videos need to be synced. In many cases only the start of the swing needs
+* The two videos need to be synchronised. In many cases only the start of the swing needs
 to be matched across the two videos. However, it may be that another key event will need to be synced.
   Testing has shown that syncing the start and impact events of the swing results in
   the swings being synchronised throughout the analysis.
